@@ -145,12 +145,12 @@ class TemplateCopier(BoardModifier):
 
 
 class KeyPlacer(BoardModifier):
-    def __init__(self, logger, board, layout):
+    def __init__(self, logger, board, layout, zerobased = False):
         super().__init__(logger, board)
         self.layout = layout
         self.keyDistance = 19050000
-        self.currentKey = 1
-        self.currentDiode = 1
+        self.currentKey = 0 if zerobased else 1 
+        self.currentDiode = 0 if zerobased else 1
         self.referenceCoordinate = wxPoint(FromMM(25), FromMM(25))
 
     def GetCurrentKey(self, keyFormat, stabilizerFormat):
@@ -333,11 +333,17 @@ class KeyAutoPlaceDialog(wx.Dialog):
 
         row6 = wx.BoxSizer(wx.HORIZONTAL)
 
+        numerationZeroCheckbox = wx.CheckBox(self, label="0-based numeration")
+        numerationZeroCheckbox.SetValue(False)
+        row6.Add(numerationZeroCheckbox, 1, wx.EXPAND|wx.ALL, 5)
+
+        row7 = wx.BoxSizer(wx.HORIZONTAL)
+
         text = wx.StaticText(self, -1, "Select controler circuit template:")
-        row6.Add(text, 0, wx.LEFT|wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, 5)
+        row7.Add(text, 0, wx.LEFT|wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, 5)
 
         templateFilePicker = wx.FilePickerCtrl(self, -1)
-        row6.Add(templateFilePicker, 1, wx.EXPAND|wx.ALL, 5)
+        row7.Add(templateFilePicker, 1, wx.EXPAND|wx.ALL, 5)
 
         box = wx.BoxSizer(wx.VERTICAL)
 
@@ -347,6 +353,7 @@ class KeyAutoPlaceDialog(wx.Dialog):
         box.Add(row4, 0, wx.EXPAND|wx.ALL, 5)
         box.Add(row5, 0, wx.EXPAND|wx.ALL, 5)
         box.Add(row6, 0, wx.EXPAND|wx.ALL, 5)
+        box.Add(row7, 0, wx.EXPAND|wx.ALL, 5)
 
         buttons = self.CreateButtonSizer(wx.OK|wx.CANCEL)
         box.Add(buttons, 0, wx.EXPAND|wx.ALL, 5)
@@ -357,6 +364,7 @@ class KeyAutoPlaceDialog(wx.Dialog):
         self.stabilizerAnnotationFormat = stabilizerAnnotationFormat
         self.diodeAnnotationFormat = diodeAnnotationFormat
         self.tracksCheckbox = tracksCheckbox
+        self.numerationZeroCheckbox = numerationZeroCheckbox
         self.templateFilePicker = templateFilePicker
 
     def GetLayoutPath(self):
@@ -373,6 +381,9 @@ class KeyAutoPlaceDialog(wx.Dialog):
 
     def IsTracks(self):
         return self.tracksCheckbox.GetValue()
+    
+    def IsZeroBased(self):
+        return self.numerationZeroCheckbox.GetValue()
 
     def GetTemplatePath(self):
         return self.templateFilePicker.GetPath()
@@ -421,7 +432,7 @@ class KeyAutoPlace(ActionPlugin):
                     textInput = f.read()
                 layout = json.loads(textInput)
                 self.logger.info("User layout: {}".format(layout))
-                placer = KeyPlacer(self.logger, self.board, layout)
+                placer = KeyPlacer(self.logger, self.board, layout, dlg.IsZeroBased())
                 placer.Run(dlg.GetKeyAnnotationFormat(), dlg.GetStabilizerAnnotationFormat(), dlg.GetDiodeAnnotationFormat(), dlg.IsTracks())
 
         dlg.Destroy()
