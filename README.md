@@ -26,7 +26,7 @@ by reducing tidiuos element placement task.
 
 - Clone this repository
 - Copy `keyautoplace.py` (or create symbolic link) to one of the KiCad's plugin
-  search locations. For details see [kicad documentation](https://docs.kicad-pcb.org/doxygen/md_Documentation_development_pcbnew-plugins.html)
+  search locations. For details see [kicad documentation](https://dev-docs.kicad.org/en/addons/)
 - Open KiCad's Pcbnew, run `Tools->External Plugins...->Refresh Plugins`.
   KeyAutoPlace plugin should appear in plugin list.
 
