@@ -1,0 +1,31 @@
+{
+    "$schema": "https://go.kicad.org/pcm/schemas/v1",
+    "name": "kicad-kbplacer",	
+    "description": "KiCad plugin for mechanical keyboard design.",
+    "description_full": "Features automatic key placement based on popular layout description from keyboard-layout-editor.",
+    "identifier": "com.github.adamws.kicad-kbplacer",
+    "type": "plugin",
+    "author": {
+        "name": "Adam Wysocki",
+        "contact": {
+            "web": "https://github.com/adamws/kicad-kbplacer"
+        }
+    },
+    "maintainer": {
+        "name": "Adam Wysocki",
+        "contact": {
+            "web": "https://github.com/adamws/kicad-kbplacer"
+        }
+    },
+    "license": "GPL-3.0",
+    "resources": {
+        "homepage": "https://github.com/adamws/kicad-kbplacer"
+    },
+    "versions": [
+        {
+            "version": "1.0",
+            "status": "stable",
+            "kicad_version": "6.0"
+        }
+    ]
+}
