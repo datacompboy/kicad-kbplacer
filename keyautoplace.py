@@ -311,7 +311,7 @@ class KeyAutoPlaceDialog(wx.Dialog):
 
         row3 = wx.BoxSizer(wx.HORIZONTAL)
 
-        stabilizerAnnotationLabel = wx.StaticText(self, -1, "Key annotation format string:")
+        stabilizerAnnotationLabel = wx.StaticText(self, -1, "Stabilizer annotation format string:")
         row3.Add(stabilizerAnnotationLabel, 1, wx.LEFT|wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, 5)
 
         stabilizerAnnotationFormat = wx.TextCtrl(self, value='ST{}')
@@ -408,7 +408,7 @@ class KeyAutoPlace(ActionPlugin):
 
         pcbFrame = [x for x in wx.GetTopLevelWindows() if x.GetName() == 'PcbFrame'][0]
 
-        dlg = KeyAutoPlaceDialog(pcbFrame, 'Title', 'Caption')
+        dlg = KeyAutoPlaceDialog(pcbFrame, 'KeyAutoPlace settings', 'Caption')
         if dlg.ShowModal() == wx.ID_OK:
             templatePath = dlg.GetTemplatePath()
             if templatePath:
