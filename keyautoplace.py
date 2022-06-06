@@ -52,21 +52,21 @@ class BoardModifier():
         self.logger = logger
         self.board = board
 
-    def GetModule(self, reference):
-        self.logger.info("Searching for {} module".format(reference))
-        module = self.board.FindModuleByReference(reference)
-        if module == None:
-            self.logger.error("Module not found")
-            raise Exception("Cannot find module {}".format(reference))
-        return module
+    def GetFootprint(self, reference):
+        self.logger.info("Searching for {} footprint".format(reference))
+        footprint = self.board.FindFootprintByReference(reference)
+        if footprint == None:
+            self.logger.error("Footrpint not found")
+            raise Exception("Cannot find footprint {}".format(reference))
+        return footprint
 
-    def SetPosition(self, module, position):
-        self.logger.info("Setting {} module position: {}".format(module.GetReference(), position))
-        module.SetPosition(position)
+    def SetPosition(self, footprint, position):
+        self.logger.info("Setting {} footprint position: {}".format(footprint.GetReference(), position))
+        footprint.SetPosition(position)
 
-    def SetRelativePositionMM(self, module, referencePoint, direction):
+    def SetRelativePositionMM(self, footprint, referencePoint, direction):
         position = wxPoint(referencePoint.x + FromMM(direction[0]), referencePoint.y + FromMM(direction[1]))
-        self.SetPosition(module, position)
+        self.SetPosition(footprint, position)
 
     def AddTrackSegment(self, start, vector, layer=B_Cu):
         track = TRACK(self.board)
@@ -95,9 +95,9 @@ class BoardModifier():
 
         return stop
 
-    def Rotate(self, module, rotationReference, angle):
-        self.logger.info("Rotating {} module: rotationReference: {}, rotationAngle: {}".format(module.GetReference(), rotationReference, angle))
-        module.Rotate(rotationReference, angle * -10)
+    def Rotate(self, footprint, rotationReference, angle):
+        self.logger.info("Rotating {} footprint: rotationReference: {}, rotationAngle: {}".format(footprint.GetReference(), rotationReference, angle))
+        footprint.Rotate(rotationReference, angle * -10)
 
 
 class TemplateCopier(BoardModifier):
@@ -111,21 +111,21 @@ class TemplateCopier(BoardModifier):
     # This method does not copy parts itself - parts to be positioned need to be present in board
     # prior to calling this.
     def Run(self):
-        module = self.template.GetModules().GetFirst()
+        footprint = self.template.GetFootprints().GetFirst()
 
-        while module:
-            reference = module.GetReference()
-            destinationModule = self.GetModule(reference)
+        while footprint:
+            reference = footprint.GetReference()
+            destinationFootprint = self.GetFootprint(reference)
 
-            layer = module.GetLayerName()
-            position = module.GetPosition()
-            orientation = module.GetOrientation()
+            layer = footprint.GetLayerName()
+            position = footprint.GetPosition()
+            orientation = footprint.GetOrientation()
 
-            if layer == "B.Cu" and destinationModule.GetLayerName() != "B.Cu":
-                destinationModule.Flip(destinationModule.GetCenter())
-            self.SetPosition(destinationModule, position)
-            destinationModule.SetOrientation(orientation)
-            module = module.Next()
+            if layer == "B.Cu" and destinationFootprint.GetLayerName() != "B.Cu":
+                destinationFootprint.Flip(destinationFootprint.GetCenter())
+            self.SetPosition(destinationFootprint, position)
+            destinationFootprint.SetOrientation(orientation)
+            footprint = footprint.Next()
 
         if self.routeTracks:
             track = self.template.GetTracks().GetFirst()
@@ -154,26 +154,26 @@ class KeyPlacer(BoardModifier):
         self.referenceCoordinate = wxPoint(FromMM(25), FromMM(25))
 
     def GetCurrentKey(self, keyFormat, stabilizerFormat):
-        key = self.GetModule(keyFormat.format(self.currentKey))
+        key = self.GetFootprint(keyFormat.format(self.currentKey))
 
         # in case of perigoso/keyswitch-kicad-library, stabilizer holes are not part of of switch footprint and needs to be handled
         # separately, check if there is stabilizer with id matching current key and return it
         # stabilizer will be None if not found
-        stabilizer = self.board.FindModuleByReference(stabilizerFormat.format(self.currentKey))
+        stabilizer = self.board.FindFootprintByReference(stabilizerFormat.format(self.currentKey))
         self.currentKey += 1
 
         return key, stabilizer
 
     def GetCurrentDiode(self, diodeFormat):
-        diode = self.GetModule(diodeFormat.format(self.currentDiode))
+        diode = self.GetFootprint(diodeFormat.format(self.currentDiode))
         self.currentDiode += 1
         return diode
 
     def RouteSwitchWithDiode(self, switch, diode, angle):
         self.logger.info("Routing {} with {}".format(switch.GetReference(), diode.GetReference()))
 
-        switchPadPosition = switch.FindPadByName("2").GetPosition()
-        diodePadPosition = diode.FindPadByName("2").GetPosition()
+        switchPadPosition = switch.FindPadByNumber("2").GetPosition()
+        diodePadPosition = diode.FindPadByNumber("2").GetPosition()
 
         self.logger.debug("switchPadPosition: {}, diodePadPosition: {}".format(switchPadPosition, diodePadPosition))
 
@@ -202,13 +202,13 @@ class KeyPlacer(BoardModifier):
         column_switch_pads = {}
         row_diode_pads = {}
         for key in self.layout["keys"]:
-            switchModule, stabilizer = self.GetCurrentKey(keyFormat, stabilizerFormat)
+            switchFootprint, stabilizer = self.GetCurrentKey(keyFormat, stabilizerFormat)
 
             width = key["width"]
             height = key["height"]
             position = wxPoint((self.keyDistance * key["x"]) + (self.keyDistance * width // 2),
                 (self.keyDistance * key["y"]) + (self.keyDistance * height // 2)) + self.referenceCoordinate
-            self.SetPosition(switchModule, position)
+            self.SetPosition(switchFootprint, position)
 
             if stabilizer:
                 self.SetPosition(stabilizer, position)
@@ -218,27 +218,27 @@ class KeyPlacer(BoardModifier):
                 if width == 1.25 and height == 2 and width2 == 1.5 and height2 == 1:
                     stabilizer.SetOrientationDegrees(90)
 
-            diodeModule = self.GetCurrentDiode(diodeFormat)
-            self.SetRelativePositionMM(diodeModule, position, [5.08, 3.03])
+            diodeFootprint = self.GetCurrentDiode(diodeFormat)
+            self.SetRelativePositionMM(diodeFootprint, position, [5.08, 3.03])
 
             angle = key["rotation_angle"]
             if angle != 0:
                 rotationReference = wxPoint((self.keyDistance * key["rotation_x"]), (self.keyDistance * key["rotation_y"])) + self.referenceCoordinate
-                self.Rotate(switchModule, rotationReference, angle)
+                self.Rotate(switchFootprint, rotationReference, angle)
                 if stabilizer:
                     self.Rotate(stabilizer, rotationReference, angle)
-                self.Rotate(diodeModule, rotationReference, angle)
-                if not diodeModule.IsFlipped():
-                    diodeModule.Flip(diodeModule.GetPosition())
-                diodeModule.SetOrientationDegrees(switchModule.GetOrientationDegrees() - 270)
+                self.Rotate(diodeFootprint, rotationReference, angle)
+                if not diodeFootprint.IsFlipped():
+                    diodeFootprint.Flip(diodeFootprint.GetPosition())
+                diodeFootprint.SetOrientationDegrees(switchFootprint.GetOrientationDegrees() - 270)
             else:
-                if diodeModule.GetOrientationDegrees() != 90.0:
-                    diodeModule.SetOrientationDegrees(270)
-                if not diodeModule.IsFlipped():
-                    diodeModule.Flip(diodeModule.GetPosition())
+                if diodeFootprint.GetOrientationDegrees() != 90.0:
+                    diodeFootprint.SetOrientationDegrees(270)
+                if not diodeFootprint.IsFlipped():
+                    diodeFootprint.Flip(diodeFootprint.GetPosition())
 
             # append pad:
-            pad = switchModule.FindPadByName("1")
+            pad = switchFootprint.FindPadByNumber("1")
             net_name = pad.GetNetname()
             match = re.match(r"^COL(\d+)$", net_name)
             if match:
@@ -247,7 +247,7 @@ class KeyPlacer(BoardModifier):
             else:
                 self.logger.warning("Switch pad without recognized net name found.")
             # append diode:
-            pad = diodeModule.FindPadByName("1")
+            pad = diodeFootprint.FindPadByNumber("1")
             net_name = pad.GetNetname()
             match = re.match(r"^ROW(\d+)$", net_name)
             if match:
@@ -257,7 +257,7 @@ class KeyPlacer(BoardModifier):
                 self.logger.warning("Switch pad without recognized net name found.")
 
             if routeTracks:
-                self.RouteSwitchWithDiode(switchModule, diodeModule, angle)
+                self.RouteSwitchWithDiode(switchFootprint, diodeFootprint, angle)
 
         if routeTracks:
             # very naive routing approach, will fail in some scenarios:
